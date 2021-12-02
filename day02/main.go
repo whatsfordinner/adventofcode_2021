@@ -1,0 +1,74 @@
+package main
+
+import (
+	"bufio"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+)
+
+type navigation struct {
+	aim          int
+	distance     int
+	depth        int
+	instructions *[]command
+}
+
+func (n *navigation) calculate() int {
+	for _, v := range *n.instructions {
+		n.process(v)
+	}
+
+	return n.distance * n.depth
+}
+
+func (n *navigation) process(c command) {
+	switch c.operation {
+	case "forward":
+		n.distance += c.value
+		n.depth += c.value * n.aim
+	case "down":
+		n.aim += c.value
+	case "up":
+		n.aim -= c.value
+	}
+}
+
+type command struct {
+	operation string
+	value     int
+}
+
+type commands []command
+
+func main() {
+	inputFile := os.Args[1]
+	input := getInput(inputFile)
+	log.Printf("Result: %d", input.calculate())
+}
+
+func getInput(filename string) *navigation {
+	result := new(navigation)
+	result.instructions = new([]command)
+
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if scanner.Text() != "" {
+			tokens := strings.Split(scanner.Text(), " ")
+			distance, err := strconv.Atoi(tokens[1])
+			if err != nil {
+				log.Fatal(err)
+			}
+			*result.instructions = append(*result.instructions, command{operation: tokens[0], value: distance})
+		}
+	}
+
+	return result
+}
