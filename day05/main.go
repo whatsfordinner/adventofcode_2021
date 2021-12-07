@@ -43,10 +43,6 @@ func (l line) isVertical() bool {
 	return l.start.x == l.end.x
 }
 
-func (l line) isHorizontal() bool {
-	return l.start.y == l.end.y
-}
-
 func main() {
 	inputFile := os.Args[1]
 	input := getInput(inputFile)
