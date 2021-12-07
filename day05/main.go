@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -13,10 +14,6 @@ type coord struct {
 	y int
 }
 
-func (c coord) equals(other coord) bool {
-	return c.x == other.x && c.y == other.y
-}
-
 type line struct {
 	start coord
 	end   coord
@@ -24,49 +21,19 @@ type line struct {
 
 func (l line) getCoords() []coord {
 	var result []coord
+	var length int
 
 	if l.isVertical() {
-		if l.start.y <= l.end.y {
-			for i := l.start.y; i <= l.end.y; i++ {
-				result = append(result, coord{x: l.start.x, y: i})
-			}
-		} else {
-			for i := l.end.y; i <= l.start.y; i++ {
-				result = append(result, coord{x: l.start.x, y: i})
-			}
-		}
-	} else if l.isHorizontal() {
-		if l.start.x <= l.end.x {
-			for i := l.start.x; i <= l.end.x; i++ {
-				result = append(result, coord{x: i, y: l.start.y})
-			}
-		} else {
-			for i := l.end.x; i <= l.start.x; i++ {
-				result = append(result, coord{x: i, y: l.start.y})
-			}
-		}
+		length = int(math.Abs(float64(l.end.y-l.start.y))) + 1
 	} else {
-		if l.start.x < l.end.x && l.start.y < l.end.y {
-			points := l.end.x - l.start.x
-			for i := 0; i <= points; i++ {
-				result = append(result, coord{x: l.start.x + i, y: l.start.y + i})
-			}
-		} else if l.start.x > l.end.x && l.start.y < l.end.y {
-			points := l.start.x - l.end.x
-			for i := 0; i <= points; i++ {
-				result = append(result, coord{x: l.start.x - i, y: l.start.y + i})
-			}
-		} else if l.start.x < l.end.x && l.start.y > l.end.y {
-			points := l.end.x - l.start.x
-			for i := 0; i <= points; i++ {
-				result = append(result, coord{x: l.start.x + i, y: l.start.y - i})
-			}
-		} else {
-			points := l.start.x - l.end.x
-			for i := 0; i <= points; i++ {
-				result = append(result, coord{x: l.start.x - i, y: l.start.y - i})
-			}
-		}
+		length = int(math.Abs(float64(l.end.x-l.start.x))) + 1
+	}
+
+	dX := (l.end.x - l.start.x) / (length - 1)
+	dY := (l.end.y - l.start.y) / (length - 1)
+
+	for i := 0; i < length; i++ {
+		result = append(result, coord{x: l.start.x + (dX * i), y: l.start.y + (dY * i)})
 	}
 
 	return result
@@ -80,31 +47,23 @@ func (l line) isHorizontal() bool {
 	return l.start.y == l.end.y
 }
 
-func (l line) calculateOverlap(other line) []coord {
-	var result []coord
-
-	for _, i := range l.getCoords() {
-		for _, j := range other.getCoords() {
-			if i.equals(j) {
-				result = append(result, i)
-			}
-		}
-	}
-
-	return result
-}
-
 func main() {
 	inputFile := os.Args[1]
 	input := getInput(inputFile)
-	var overlap []coord
-	for i, v := range *input {
-		for _, x := range (*input)[i+1:] {
-			newOverlap := v.calculateOverlap(x)
-			overlap = appendNew(overlap, newOverlap)
+	seenCoords := map[coord]int{}
+	overlappingPoints := 0
+	for _, v := range *input {
+		for _, c := range v.getCoords() {
+			seenCoords[c]++
 		}
 	}
-	log.Printf("%+v", len(overlap))
+
+	for _, v := range seenCoords {
+		if v > 1 {
+			overlappingPoints++
+		}
+	}
+	log.Printf("%+v", overlappingPoints)
 }
 
 func getInput(filename string) *[]line {
@@ -157,22 +116,4 @@ func getInput(filename string) *[]line {
 	}
 
 	return result
-}
-
-func appendNew(slice []coord, in []coord) []coord {
-	for _, i := range in {
-		found := false
-		for _, j := range slice {
-			if i.equals(j) {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			slice = append(slice, i)
-		}
-	}
-
-	return slice
 }
