@@ -15,7 +15,7 @@ func (c *crabArmada) converge(x int) int {
 	fuelUsed := 0
 	for _, v := range *c {
 		steps := int(math.Abs(float64(v - x)))
-		fuelUsed += sumToOne(steps)
+		fuelUsed += steps * (steps + 1) / 2
 	}
 
 	return fuelUsed
@@ -91,13 +91,4 @@ func getInput(filename string) *crabArmada {
 	}
 
 	return result
-}
-
-func sumToOne(in int) int {
-	out := 0
-	for i := 1; i <= in; i++ {
-		out += i
-	}
-
-	return out
 }
