@@ -44,11 +44,9 @@ func (l line) isVertical() bool {
 }
 
 func main() {
-	inputFile := os.Args[1]
-	input := getInput(inputFile)
 	seenCoords := map[coord]int{}
 	overlappingPoints := 0
-	for _, v := range *input {
+	for _, v := range *getInput() {
 		for _, c := range v.getCoords() {
 			seenCoords[c]++
 		}
@@ -59,19 +57,12 @@ func main() {
 			overlappingPoints++
 		}
 	}
-	log.Printf("%+v", overlappingPoints)
+	log.Printf("Result: %+v", overlappingPoints)
 }
 
-func getInput(filename string) *[]line {
+func getInput() *[]line {
 	result := new([]line)
-
-	file, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		if scanner.Text() != "" {
 			coordStrings := strings.Split(scanner.Text(), " -> ")

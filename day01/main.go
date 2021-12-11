@@ -28,21 +28,12 @@ func (w *window) sum() int {
 }
 
 func main() {
-	inputFile := os.Args[1]
-	input := getInput(inputFile)
-	log.Printf("Result: %d", getIncreases(input))
+	log.Printf("Result: %d", getIncreases(getInput()))
 }
 
-func getInput(filename string) *[]int {
+func getInput() *[]int {
 	result := new([]int)
-
-	file, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		if scanner.Text() != "" {
 			row, err := strconv.Atoi(scanner.Text())

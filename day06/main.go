@@ -9,8 +9,7 @@ import (
 )
 
 func main() {
-	inputFile := os.Args[1]
-	input := getInput(inputFile)
+	input := getInput()
 	log.Printf("%+v", input)
 	for i := 1; i <= 256; i++ {
 		input = tick(input)
@@ -25,16 +24,9 @@ func main() {
 	log.Printf("Result: %d", numFish)
 }
 
-func getInput(filename string) [9]int {
+func getInput() [9]int {
 	var result [9]int
-
-	file, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		if scanner.Text() != "" {
 			ageStrings := strings.Split(scanner.Text(), ",")

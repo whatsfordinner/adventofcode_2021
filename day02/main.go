@@ -43,22 +43,13 @@ type command struct {
 type commands []command
 
 func main() {
-	inputFile := os.Args[1]
-	input := getInput(inputFile)
-	log.Printf("Result: %d", input.calculate())
+	log.Printf("Result: %d", getInput().calculate())
 }
 
-func getInput(filename string) *navigation {
+func getInput() *navigation {
 	result := new(navigation)
 	result.instructions = new([]command)
-
-	file, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		if scanner.Text() != "" {
 			tokens := strings.Split(scanner.Text(), " ")

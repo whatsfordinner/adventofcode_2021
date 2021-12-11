@@ -8,25 +8,17 @@ import (
 )
 
 func main() {
-	inputFile := os.Args[1]
-	input := getInput(inputFile)
+	input := getInput()
 	gamma, epsilon := findGammaAndEpsilon(input)
-	log.Printf("Result: %d", binaryToDecimal(gamma)*binaryToDecimal(epsilon))
+	log.Printf("Gamme and Epsilon: %d", binaryToDecimal(gamma)*binaryToDecimal(epsilon))
 	oxygen := findMeetsCriteria(0, input, pickMostCommon)
 	co2 := findMeetsCriteria(0, input, pickLeastCommon)
-	log.Printf("Result: %d", binaryToDecimal(&oxygen)*binaryToDecimal(&co2))
+	log.Printf("Oxygen and CO2: %d", binaryToDecimal(&oxygen)*binaryToDecimal(&co2))
 }
 
-func getInput(filename string) *[][]int {
+func getInput() *[][]int {
 	result := new([][]int)
-
-	file, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		if scanner.Text() != "" {
 			newLine := new([]int)

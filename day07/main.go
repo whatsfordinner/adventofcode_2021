@@ -61,21 +61,14 @@ func (c *crabArmada) quickConverge() (int, int) {
 }
 
 func main() {
-	inputFile := os.Args[1]
-	input := getInput(inputFile)
+	input := getInput()
 	position, fuel := input.quickConverge()
 	log.Printf("Result: Converging on %d takes %d fuel", position, fuel)
 }
 
-func getInput(filename string) *crabArmada {
+func getInput() *crabArmada {
 	result := new(crabArmada)
-
-	file, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		if scanner.Text() != "" {
 			tokens := strings.Split(scanner.Text(), ",")

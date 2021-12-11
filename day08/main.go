@@ -121,8 +121,7 @@ func (c *console) value() int {
 }
 
 func main() {
-	inputFile := os.Args[1]
-	input := getInput(inputFile)
+	input := getInput()
 	result := 0
 
 	for _, v := range *input {
@@ -133,14 +132,9 @@ func main() {
 	log.Printf("Result: %d", result)
 }
 
-func getInput(filename string) *[]console {
+func getInput() *[]console {
 	result := new([]console)
-	file, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		if scanner.Text() != "" {
 			newConsole := new(console)

@@ -88,12 +88,10 @@ func (b *bingoGame) drawNumber() (bool, *[]int, *[]int) {
 }
 
 func main() {
-	inputFile := os.Args[1]
-	input := getInput(inputFile)
+	input := getInput()
 	for len(input.numbers) > 0 {
 		win, boards, scores := input.drawNumber()
 		if win {
-			log.Printf("Found %d winning boards", len(*boards))
 			if len(input.boards) > 1 {
 				newBoards := new([]*bingoBoard)
 				for i, v := range input.boards {
@@ -118,16 +116,9 @@ func main() {
 	}
 }
 
-func getInput(filename string) *bingoGame {
+func getInput() *bingoGame {
 	result := new(bingoGame)
-
-	file, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	numbersLine := strings.Split(scanner.Text(), ",")
 	for _, v := range numbersLine {
