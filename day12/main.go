@@ -37,69 +37,45 @@ func (c *caveSystem) smallCaves() []string {
 		}
 	}
 
-	log.Printf("Small caves: %+v", result)
-
 	return result
 }
 
 func (c *caveSystem) tracePaths() [][]string {
-	result := [][]string{}
-	for _, v := range c.smallCaves() {
-		interim := c.tracePath("start", []string{}, v)
-		for _, x := range interim {
-			result = append(result, x)
-		}
-	}
-
-	unique := [][]string{}
-	for _, v := range result {
-		if !containsPath(unique, v) {
-			unique = append(unique, v)
-		}
-	}
-
-	return unique
+	return c.tracePath("start", []string{}, false)
 }
 
-func (c *caveSystem) tracePath(cave string, path []string, specialCave string) [][]string {
-	result := [][]string{}
+func (c *caveSystem) tracePath(cave string, path []string, revisited bool) [][]string {
 	path = append(path, cave)
 	if cave == "end" {
-		return append(result, path)
+		return [][]string{path}
 	}
 
-	timesSpecialCaveVisited := 0
-	for _, v := range path {
-		if v == specialCave {
-			timesSpecialCaveVisited++
-		}
-	}
-	specialCaveOption := timesSpecialCaveVisited < 2
-
-	options := []string{}
+	result := [][]string{}
 	for _, v := range (*c)[cave] {
 		isOption := true
 		if !isAllUpper(v) {
 			for _, x := range path {
-				if v == x {
+				if v == x && revisited || v == "start" {
 					isOption = false
-				}
-
-				if v == specialCave && specialCaveOption {
-					isOption = true
+					break
 				}
 			}
 		}
 
 		if isOption {
-			options = append(options, v)
-		}
-	}
+			newRevisited := revisited
 
-	for _, v := range options {
-		interim := c.tracePath(v, path, specialCave)
-		for _, x := range interim {
-			result = append(result, x)
+			if !newRevisited {
+				for _, x := range path {
+					if !isAllUpper(v) && v == x {
+						newRevisited = true
+					}
+				}
+			}
+
+			copyPath := make([]string, len(path))
+			copy(copyPath, path)
+			result = append(result, c.tracePath(v, copyPath, newRevisited)...)
 		}
 	}
 
@@ -129,22 +105,4 @@ func getInput() *caveSystem {
 func isAllUpper(s string) bool {
 	re := regexp.MustCompile(`^[A-Z]+$`)
 	return re.MatchString(s)
-}
-
-func containsPath(ps [][]string, p []string) bool {
-	for _, v := range ps {
-		if len(v) == len(p) {
-			possibleMatch := true
-			for i := 0; i < len(v); i++ {
-				if v[i] != p[i] {
-					possibleMatch = false
-				}
-			}
-			if possibleMatch {
-				return true
-			}
-		}
-	}
-
-	return false
 }
