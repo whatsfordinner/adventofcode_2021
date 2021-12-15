@@ -7,15 +7,9 @@ import (
 	"strings"
 )
 
-func maxSubMin(in string) int {
-	result := map[string]int{}
-	for _, v := range strings.Split(string(in), "") {
-		result[v]++
-	}
-
+func maxSubMin(in map[string]int) int {
 	min, max := 0, 0
-
-	for _, v := range result {
+	for _, v := range in {
 		if min == 0 {
 			min = v
 		}
@@ -36,62 +30,45 @@ func maxSubMin(in string) int {
 	return max - min
 }
 
-func process(rs *rules, in string, firstProcess bool) string {
-	test := strings.Split(in, "")
-	quickValue := (*rs)[in]
-	if quickValue != "" {
-		if firstProcess {
-			return test[0] + quickValue + test[len(test)-1]
-		} else {
-			return quickValue + test[len(test)-1]
-		}
-	} else {
-		result := ""
-		if len(in) < 1000 {
-			if firstProcess {
-				result += test[0]
-			}
-			for i := 1; i < len(test); i++ {
-				result += (*rs)[test[i-1]+test[i]] + test[i]
-			}
-		} else {
-			splits := 30
-			increment := len(in) / splits
-			i := increment
-			result += process(rs, in[:i], firstProcess)
-			i += increment
-			for ; i < len(in); i += increment {
-				result += process(rs, in[i-increment-1:i], false)
-			}
-			result += process(rs, in[i-increment-1:], false)
-		}
-
-		if firstProcess {
-			(*rs)[in] = result[1 : len(result)-1]
-		} else {
-			(*rs)[in] = result[:len(result)-1]
-		}
-		return result
+func process(polymers *map[string]int, rules map[string]string, elements map[string]int) {
+	newPolymers := make(map[string]int)
+	for k, v := range *polymers {
+		newElement := rules[k]
+		elements[newElement] += v
+		currentElements := strings.Split(k, "")
+		newPolymers[currentElements[0]+newElement] += v
+		newPolymers[newElement+currentElements[1]] += v
 	}
+	*polymers = newPolymers
 }
-
-type rules map[string]string
 
 func main() {
-	chain, rules := getInput()
+	chain, rules, elements := getInput()
+	log.Printf("%+v", chain)
+	log.Printf("%+v", elements)
 	for i := 0; i < 40; i++ {
 		log.Printf("Iteration %d", i+1)
-		chain = process(rules, chain, true)
+		process(&chain, rules, elements)
+		log.Printf("%+v", chain)
+		log.Printf("%+v", elements)
 	}
-	log.Printf("Result: %d", maxSubMin(chain))
+	log.Printf("Result: %d", maxSubMin(elements))
 }
 
-func getInput() (string, *rules) {
-	returnRules := make(rules)
+func getInput() (map[string]int, map[string]string, map[string]int) {
+	startPolymers := make(map[string]int)
+	returnRules := make(map[string]string)
+	startElements := make(map[string]int)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
-	returnChain := scanner.Text()
+	startChain := strings.Split(scanner.Text(), "")
+	for i := 2; i <= len(startChain); i++ {
+		startPolymers[strings.Join(startChain[i-2:i], "")]++
+	}
+	for _, v := range startChain {
+		startElements[v]++
+	}
 	for scanner.Scan() {
 		if scanner.Text() != "" {
 			tokens := strings.Split(scanner.Text(), " -> ")
@@ -99,5 +76,5 @@ func getInput() (string, *rules) {
 		}
 	}
 
-	return returnChain, &returnRules
+	return startPolymers, returnRules, startElements
 }
