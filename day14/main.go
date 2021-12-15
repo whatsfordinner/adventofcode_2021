@@ -44,13 +44,8 @@ func process(polymers *map[string]int, rules map[string]string, elements map[str
 
 func main() {
 	chain, rules, elements := getInput()
-	log.Printf("%+v", chain)
-	log.Printf("%+v", elements)
 	for i := 0; i < 40; i++ {
-		log.Printf("Iteration %d", i+1)
 		process(&chain, rules, elements)
-		log.Printf("%+v", chain)
-		log.Printf("%+v", elements)
 	}
 	log.Printf("Result: %d", maxSubMin(elements))
 }
