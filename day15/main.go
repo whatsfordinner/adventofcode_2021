@@ -20,34 +20,74 @@ type cave struct {
 	cells []*cell
 }
 
+type priorityQueue struct {
+	queue []*priorityObject
+}
+
+type priorityObject struct {
+	cell     *cell
+	priority int
+}
+
+func (q *priorityQueue) extract_min() *cell {
+	if len(q.queue) == 0 {
+		return nil
+	}
+
+	minP := math.MaxInt
+	minI := 0
+	for i, v := range q.queue {
+		if v.priority < minP {
+			minP = v.priority
+			minI = i
+		}
+	}
+
+	result := q.queue[minI]
+	q.queue = append(q.queue[:minI], q.queue[minI+1:]...)
+
+	return result.cell
+}
+
+func (q *priorityQueue) add_with_priority(c *cell, p int) {
+	q.queue = append(q.queue, &priorityObject{c, p})
+}
+
+func (q *priorityQueue) decrease_priority(c *cell, p int) {
+	for _, v := range q.queue {
+		if v.cell == c {
+			v.priority = p
+		}
+	}
+}
+
 func (c *cave) dijkstra() int {
 	dist := make(map[*cell]int)
 	prev := make(map[*cell]*cell)
-	unvisited := make([]*cell, len(c.cells))
-	copy(unvisited, c.cells)
+	unvisited := new(priorityQueue)
+	unvisited.queue = []*priorityObject{}
 
 	for _, v := range c.cells {
+		unvisited.add_with_priority(v, math.MaxInt)
 		dist[v] = math.MaxInt
 		prev[v] = nil
 	}
 
 	dist[c.start] = 0
 
-	for len(unvisited) > 0 {
-		current := minCell(dist, unvisited)
-		removeCell(&unvisited, current)
+	for len(unvisited.queue) > 0 {
+		current := unvisited.extract_min()
 
 		if current == c.end {
 			break
 		}
 
 		for _, v := range current.link {
-			if containsCell(unvisited, v) {
-				possibleRisk := dist[current] + v.risk
-				if possibleRisk < dist[v] {
-					dist[v] = possibleRisk
-					prev[v] = current
-				}
+			possibleRisk := dist[current] + v.risk
+			if possibleRisk < dist[v] {
+				dist[v] = possibleRisk
+				prev[v] = current
+				unvisited.decrease_priority(v, possibleRisk)
 			}
 		}
 	}
@@ -110,22 +150,26 @@ func getInput() *cave {
 		}
 	}
 
-	for y, row := range input {
-		newCellRow := []*cell{}
-		for x, c := range row {
-			newCell := new(cell)
-			newCell.risk = c
-			if y == 0 && x == 0 {
-				result.start = newCell
-			}
+	for i := 0; i < 5; i++ {
+		for y, row := range input {
+			newCellRow := []*cell{}
+			for j := 0; j < 5; j++ {
+				for x, c := range row {
+					newCell := new(cell)
+					newCell.risk = riskWrap(c + i + j)
+					if y == 0 && x == 0 && i == 0 && j == 0 {
+						result.start = newCell
+					}
 
-			if y == len(input)-1 && x == len(input[y])-1 {
-				result.end = newCell
-			}
+					if y == len(input)-1 && x == len(input[y])-1 && i == 4 && j == 4 {
+						result.end = newCell
+					}
 
-			newCellRow = append(newCellRow, newCell)
+					newCellRow = append(newCellRow, newCell)
+				}
+			}
+			allCells = append(allCells, newCellRow)
 		}
-		allCells = append(allCells, newCellRow)
 	}
 
 	for y, row := range allCells {
@@ -152,9 +196,13 @@ func getInput() *cave {
 		result.cells = append(result.cells, v...)
 	}
 
-	log.Printf("Cave start: %v", result.start)
-	log.Printf("Cave end: %v", result.end)
-	log.Printf("Cell at (%d,%d): %v", len(allCells), len(allCells[len(allCells)-1]), allCells[len(allCells)-1][len(allCells[len(allCells)-1])-1])
-
 	return result
+}
+
+func riskWrap(in int) int {
+	for in > 9 {
+		in -= 9
+	}
+
+	return in
 }
