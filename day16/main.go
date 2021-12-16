@@ -23,6 +23,14 @@ func (p literalPacket) getPacketType() int {
 	return p.packetType
 }
 
+func (p literalPacket) sumVersion() int {
+	return p.version
+}
+
+func (p literalPacket) evaluate() int {
+	return p.value
+}
+
 type operatorPacket struct {
 	version    int
 	packetType int
@@ -37,56 +45,140 @@ func (p operatorPacket) getPacketType() int {
 	return p.packetType
 }
 
+func (p operatorPacket) sumVersion() int {
+	var result int
+
+	result += p.version
+	for _, v := range p.value {
+		result += v.sumVersion()
+	}
+
+	return result
+}
+
+func (p operatorPacket) evaluate() int {
+	var result int
+
+	switch p.packetType {
+	case 0:
+		for _, v := range p.value {
+			result += v.evaluate()
+		}
+	case 1:
+		result = 1
+		for _, v := range p.value {
+			result *= v.evaluate()
+		}
+	case 2:
+		result = math.MaxInt
+		for _, v := range p.value {
+			val := v.evaluate()
+			if val < result {
+				result = val
+			}
+		}
+	case 3:
+		result = 0
+		for _, v := range p.value {
+			val := v.evaluate()
+			if val > result {
+				result = val
+			}
+		}
+	case 5:
+		if p.value[0].evaluate() > p.value[1].evaluate() {
+			result = 1
+		} else {
+			result = 0
+		}
+	case 6:
+		if p.value[0].evaluate() < p.value[1].evaluate() {
+			result = 1
+		} else {
+			result = 0
+		}
+	case 7:
+		if p.value[0].evaluate() == p.value[1].evaluate() {
+			result = 1
+		} else {
+			result = 0
+		}
+	}
+
+	return result
+}
+
 type packet interface {
 	getVersion() int
 	getPacketType() int
+	sumVersion() int
+	evaluate() int
 }
 
 func main() {
-	log.Printf("%+v", getInput())
+	input, _ := getInput()
+	log.Printf("Sum of versions: %d", input.sumVersion())
+	log.Printf("Evluation: %d", input.evaluate())
 }
 
-func getInput() packet {
+func getInput() (packet, string) {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	input := scanner.Text()
 	input = hexToBin(input)
-	log.Printf("%s", input)
 	return parsePacket(input)
 }
 
-func parsePacket(in string) packet {
+func parsePacket(in string) (packet, string) {
 	version := binToDec(in[:3])
 	packetType := binToDec(in[3:6])
-
-	log.Printf("Version: %d, Type: %d", version, packetType)
 
 	if packetType == 4 {
 		rawContent := in[6:]
 		var content string
-		for i := 0; i < len(rawContent); i += 5 {
+		i := 0
+		for i < len(rawContent) {
 			content += rawContent[i+1 : i+5]
 			if rawContent[i] == '0' {
+				i += 5
 				break
 			}
+			i += 5
 		}
 		return literalPacket{
 			version:    version,
 			packetType: packetType,
 			value:      binToDec(content),
-		}
+		}, in[i+6:]
 	}
 
 	lengthType := in[6]
+	var remainder string
+	subPackets := []packet{}
 	if lengthType == '0' {
 		lengthOfSubpackets := binToDec(in[7:22])
-		log.Printf("Length: %d", lengthOfSubpackets)
+		remainder = in[22:]
+		targetRemainder := len(remainder) - lengthOfSubpackets
+		for len(remainder) > targetRemainder {
+			newPacket, out := parsePacket(remainder)
+			subPackets = append(subPackets, newPacket)
+			remainder = out
+		}
 	} else {
 		countOfSubpackets := binToDec(in[7:18])
-		log.Printf("Count: %d", countOfSubpackets)
+		remainder = in[18:]
+		for i := 0; i < countOfSubpackets; i++ {
+			newPacket, out := parsePacket(remainder)
+			subPackets = append(subPackets, newPacket)
+			remainder = out
+		}
 	}
 
-	return operatorPacket{}
+	return operatorPacket{
+		version:    version,
+		packetType: packetType,
+		value:      subPackets,
+	}, remainder
 }
 
 func hexToBin(in string) string {
