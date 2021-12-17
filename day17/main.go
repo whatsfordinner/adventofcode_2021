@@ -22,6 +22,12 @@ type shot struct {
 }
 
 func (s *shot) tick() {
+	s.location.x += s.vX
+	s.location.y += s.vY
+
+	if s.location.y > s.maxY {
+		s.maxY = s.location.y
+	}
 	if s.vX > 0 {
 		s.vX--
 	}
@@ -29,12 +35,6 @@ func (s *shot) tick() {
 		s.vX++
 	}
 	s.vY--
-	s.location.x += s.vX
-	s.location.y += s.vY
-
-	if s.location.y > s.maxY {
-		s.maxY = s.location.y
-	}
 }
 
 type targetArea struct {
@@ -54,29 +54,56 @@ func (t targetArea) isHit(c coord) string {
 	}
 }
 
-func (t targetArea) bestX() (int, int) {
-	minBest := math.MaxInt
-	maxBest := 0
+func (t targetArea) firstX() int {
+	firstX := math.MaxInt
 	for i := 1; sumOfIntegers(i) <= t.maxX; i++ {
 		if sumOfIntegers(i) >= t.minX {
-			if i < minBest {
-				minBest = i
-			}
-
-			if i > maxBest {
-				maxBest = i
+			if i < firstX {
+				firstX = i
 			}
 		}
 	}
 
-	return minBest, maxBest
+	return firstX
+}
+
+func (t targetArea) lastX() int {
+	return t.maxX
+}
+
+func (t targetArea) firstY() int {
+	return t.minY
+}
+
+func (t targetArea) lastY() int {
+	return -(t.minY + 1)
 }
 
 func main() {
 	target := getInput()
-	log.Printf("%+v", target)
-	min, max := target.bestX()
-	log.Printf("%d, %d", min, max)
+	log.Printf("x: %d - %d", target.firstX(), target.lastX())
+	log.Printf("y: %d - %d", target.firstY(), target.lastY())
+	log.Printf("Candidates: %d", (target.lastX()-target.firstX())*(target.lastY()-target.firstY()))
+	hits := 0
+	for x := target.firstX(); x <= target.lastX(); x++ {
+		for y := target.firstY(); y <= target.lastY(); y++ {
+			testShot := &shot{
+				vX:       x,
+				vY:       y,
+				location: coord{x: 0, y: 0},
+			}
+			var testResult string
+			for !(testResult == "MISS" || testResult == "BULLSEYE") {
+				testShot.tick()
+				testResult = target.isHit(testShot.location)
+
+			}
+			if testResult == "BULLSEYE" {
+				hits++
+			}
+		}
+	}
+	log.Printf("Result: %d", hits)
 }
 
 func getInput() targetArea {
