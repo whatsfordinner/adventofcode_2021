@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"regexp"
@@ -23,6 +24,10 @@ func (c coord) subtract(o coord) coord {
 	return coord{x: c.x - o.x, y: c.y - o.y, z: c.z - o.z}
 }
 
+func (c coord) equals(o coord) bool {
+	return c.x == o.x && c.y == o.y && c.z == o.z
+}
+
 func (c coord) rotateX() coord {
 	return coord{x: c.x, y: -c.z, z: c.y}
 }
@@ -32,27 +37,17 @@ func (c coord) rotateY() coord {
 }
 
 func (c coord) rotateZ() coord {
-	return coord{x: c.y, y: -c.x, z: c.z}
+	return coord{x: -c.y, y: c.x, z: c.z}
 }
 
-func (c coord) permutations() []coord {
-	result := []coord{c}
-	v := c
-	for i := 0; i < 4; i++ {
-		for j := 0; j < 4; j++ {
-			for k := 0; k < 4; k++ {
-				v = v.rotateX()
-				result = append(result, v)
-			}
-			v = v.rotateY()
+func (c coord) in(xs []coord) bool {
+	for _, v := range xs {
+		if c == v {
+			return true
 		}
-		v = v.rotateZ()
 	}
-	return result
-}
 
-func (c coord) equals(o coord) bool {
-	return c.x == o.x && c.y == o.y && c.z == o.z
+	return false
 }
 
 type seaScanner struct {
@@ -60,72 +55,154 @@ type seaScanner struct {
 	beacons  []coord
 }
 
+func (s seaScanner) toString() string {
+	result := fmt.Sprintf("Location: %+v\nBeacons:\n", s.location)
+	for _, v := range s.beacons {
+		result += fmt.Sprintf("\t%+v\n", v)
+	}
+	return result + "\n"
+}
+
 func (s *seaScanner) permutations() []seaScanner {
 	result := []seaScanner{}
-	permutations := [][]coord{}
-	for _, v := range s.beacons {
-		beaconPermutations := v.permutations()
-		permutations = append(permutations, beaconPermutations)
+
+	v := make([]coord, len(s.beacons))
+	q := make([]coord, len(s.beacons))
+	copy(v, s.beacons)
+	copy(q, s.beacons)
+	for i := 0; i < 4; i++ {
+		newBeacons := make([]coord, len(v))
+		copy(newBeacons, v)
+		result = append(result, seaScanner{s.location, newBeacons})
+		for k, x := range v {
+			v[k] = x.rotateX()
+		}
 	}
 
-	for i := 0; i < len(permutations[0]); i++ {
-		rotatedScanner := seaScanner{location: s.location}
-		for _, v := range permutations {
-			rotatedScanner.beacons = append(rotatedScanner.beacons, v[i])
-		}
-		result = append(result, rotatedScanner)
+	for i, x := range v {
+		v[i] = x.rotateY()
 	}
+
+	for i := 0; i < 4; i++ {
+		newBeacons := make([]coord, len(v))
+		copy(newBeacons, v)
+		result = append(result, seaScanner{s.location, newBeacons})
+		for j, x := range v {
+			v[j] = x.rotateZ()
+		}
+	}
+
+	for i, x := range v {
+		v[i] = x.rotateY()
+	}
+
+	for i := 0; i < 4; i++ {
+		newBeacons := make([]coord, len(v))
+		copy(newBeacons, v)
+		result = append(result, seaScanner{s.location, newBeacons})
+		for k, x := range v {
+			v[k] = x.rotateX()
+		}
+	}
+
+	for i, x := range v {
+		v[i] = x.rotateY()
+	}
+
+	for i := 0; i < 4; i++ {
+		newBeacons := make([]coord, len(v))
+		copy(newBeacons, v)
+		result = append(result, seaScanner{s.location, newBeacons})
+		for j, x := range v {
+			v[j] = x.rotateZ()
+		}
+	}
+
+	for i, x := range v {
+		v[i] = x.rotateY().rotateZ()
+	}
+
+	for i := 0; i < 4; i++ {
+		newBeacons := make([]coord, len(v))
+		copy(newBeacons, v)
+		result = append(result, seaScanner{s.location, newBeacons})
+		for j, x := range v {
+			v[j] = x.rotateY()
+		}
+	}
+
+	for i, x := range v {
+		v[i] = x.rotateZ().rotateZ()
+	}
+
+	for i := 0; i < 4; i++ {
+		newBeacons := make([]coord, len(v))
+		copy(newBeacons, v)
+		result = append(result, seaScanner{s.location, newBeacons})
+		for j, x := range v {
+			v[j] = x.rotateY()
+		}
+	}
+
 	return result
 }
 
-func (s *seaScanner) compare(o *seaScanner) []coord {
-	result := []coord{}
+func (s *seaScanner) compare(o *seaScanner) bool {
 	tests := o.permutations()
 
 	for _, test := range tests {
-		for _, a := range s.beacons {
-			aAbsolute := s.location.add(a)
-			test.location = aAbsolute.subtract(test.beacons[0])
-			result = []coord{}
-			for _, b := range test.beacons {
-				for _, c := range s.beacons {
-					if s.location.add(c).equals(test.location.add(b)) {
-						result = append(result, c)
+		for _, b := range test.beacons {
+			for _, a := range s.beacons {
+				test.location = s.location.add(a).subtract(b)
+				result := 0
+				for _, c := range test.beacons {
+					if test.location.add(c).subtract(s.location).in(s.beacons) {
+						result++
 					}
 				}
-			}
-			if len(result) >= 12 {
-				*o = test
-				return result
+				if result >= 12 {
+					*o = test
+					return true
+				}
 			}
 		}
 	}
 
-	return result
+	return false
 }
 
 func main() {
 	unlocated := getInput()
 	located := []*seaScanner{unlocated[0]}
 	unlocated = unlocated[1:]
-	result := []coord{}
+	result := located[0].beacons
 	for len(unlocated) > 0 {
 		for _, v := range located {
-			log.Printf("%+v", v)
 			for _, x := range unlocated {
-				common := v.compare(x)
-				if len(common) >= 12 {
-					located = append(located, x)
+				if v.compare(x) {
+					located = appendUniqueSeaScanner(located, x)
 					unlocated = remove(unlocated, x)
-					for _, v := range common {
-						result = appendIfUnique(result, v)
+					for _, y := range x.beacons {
+						result = appendIfUnique(result, x.location.add(y))
 					}
 				}
 			}
 		}
 	}
 
-	log.Printf("%d", len(result))
+	max := 0
+	for _, a := range located {
+		for _, b := range located {
+			manhattonVector := a.location.subtract(b.location)
+			manhattanDistance := manhattonVector.x + manhattonVector.y + manhattonVector.z
+			if manhattanDistance > max {
+				max = manhattanDistance
+			}
+		}
+	}
+
+	log.Printf("Result: %d", len(result))
+	log.Printf("Greatest Manhattan distance: %d units", max)
 }
 
 func getInput() []*seaScanner {
@@ -157,7 +234,7 @@ func getInput() []*seaScanner {
 			if err != nil {
 				log.Fatal(err)
 			}
-			z, err := strconv.Atoi(rawCoord[1])
+			z, err := strconv.Atoi(rawCoord[2])
 			newSeaScanner.beacons = append(newSeaScanner.beacons, coord{x: x, y: y, z: z})
 		}
 	}
@@ -172,6 +249,16 @@ func appendIfUnique(cs []coord, c coord) []coord {
 		}
 	}
 	return append(cs, c)
+}
+
+func appendUniqueSeaScanner(xs []*seaScanner, in *seaScanner) []*seaScanner {
+	for _, v := range xs {
+		if v == in {
+			return xs
+		}
+	}
+
+	return append(xs, in)
 }
 
 func remove(xs []*seaScanner, x *seaScanner) []*seaScanner {
